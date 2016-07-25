@@ -515,7 +515,14 @@ namespace Microsoft.AspNetCore.Mvc.IntegrationTests
 
         private class Person7
         {
-            public IEnumerable<Address> Address { get; } = new Address[] { };
+            public IEnumerable<Address> Address { get; } = new Address[]
+            {
+                new Address()
+                {
+                     City = "Redmond",
+                     Street = "One Microsoft Way"
+                }
+            };
         }
 
         [Fact]
@@ -540,41 +547,14 @@ namespace Microsoft.AspNetCore.Mvc.IntegrationTests
             Assert.NotNull(model.Address);
 
             // Arrays should not be updated.
-            Assert.Equal(0, model.Address.Count());
-
-            // ModelState
-            Assert.True(modelState.IsValid);
-            Assert.Empty(modelState);
-        }
-
-        private class Person8
-        {
-            public ICollection<Address> Address { get; } = new Address[] { };
-        }
-
-        [Fact]
-        public async Task TryUpdateModel_NonSettableICollectionModel_EmptyPrefix_IsNotBound()
-        {
-            // Arrange
-            var testContext = ModelBindingTestHelper.GetTestContext(request =>
-            {
-                request.QueryString = QueryString.Create("Address[0].Street", "SomeStreet");
-            });
-
-            var modelState = testContext.ModelState;
-            var model = new Person8();
-
-            // Act
-            var result = await TryUpdateModelAsync(model, string.Empty, testContext);
-
-            // Assert
-            Assert.True(result);
-
-            // Model
-            Assert.NotNull(model.Address);
-
-            // Arrays should not be updated.
-            Assert.Equal(0, model.Address.Count);
+            Assert.Equal(1, model.Address.Count());
+            Assert.Collection(
+                model.Address,
+                (a) =>
+                {
+                    Assert.Equal("Redmond", a.City);
+                    Assert.Equal("One Microsoft Way", a.Street);
+                });
 
             // ModelState
             Assert.True(modelState.IsValid);

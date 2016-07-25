@@ -328,22 +328,22 @@ namespace Microsoft.AspNetCore.Mvc.IntegrationTests
             Assert.True(modelState.IsValid);
         }
 
-        private class PersonWithReadOnly
+        private class PersonWithReadOnlyAndInitializedProperty
         {
             public string Name { get; set; }
 
-            public string[] Aliases { get; }
+            public string[] Aliases { get; } = new[] { "Alias1", "Alias2" };
         }
 
         [Fact]
-        public async Task ArrayModelBinder_BindsArrayOfComplexType_WithPrefix_Success_ReadOnly()
+        public async Task ArrayModelBinder_BindsArrayOfComplexTypeHavingInitializedData_WithPrefix_Success_ReadOnly()
         {
             // Arrange
             var argumentBinder = ModelBindingTestHelper.GetArgumentBinder();
             var parameter = new ParameterDescriptor()
             {
                 Name = "parameter",
-                ParameterType = typeof(PersonWithReadOnly)
+                ParameterType = typeof(PersonWithReadOnlyAndInitializedProperty)
             };
 
             var testContext = ModelBindingTestHelper.GetTestContext(request =>
@@ -359,9 +359,13 @@ namespace Microsoft.AspNetCore.Mvc.IntegrationTests
             // Assert
             Assert.True(modelBindingResult.IsModelSet);
 
-            var model = Assert.IsType<PersonWithReadOnly>(modelBindingResult.Model);
+            var model = Assert.IsType<PersonWithReadOnlyAndInitializedProperty>(modelBindingResult.Model);
             Assert.Equal("James", model.Name);
-            Assert.Null(model.Aliases);
+            Assert.NotNull(model.Aliases);
+            Assert.Collection(
+                model.Aliases,
+                (e) => Assert.Equal("Alias1", e),
+                (e) => Assert.Equal("Alias2", e));
         }
     }
 }

@@ -2139,7 +2139,7 @@ namespace Microsoft.AspNetCore.Mvc.IntegrationTests
         [InlineData("?parameter.ProductId=10")]
         [InlineData("?parameter.ProductId=10&parameter.Name=Camera")]
         [InlineData("?parameter.ProductId=10&parameter.Name=Camera&parameter.Aliases[0]=Camera1")]
-        public async Task MutableObjectModelBinder_BindsSettableProperties(string queryString)
+        public async Task ComplexTypeModelBinder_BindsSettableProperties(string queryString)
         {
             // Arrange
             var argumentBinder = ModelBindingTestHelper.GetArgumentBinder();
@@ -2149,14 +2149,12 @@ namespace Microsoft.AspNetCore.Mvc.IntegrationTests
                 ParameterType = typeof(Product)
             };
 
-            // Need to have a key here so that the MutableObjectModelBinder will recurse to bind elements.
+            // Need to have a key here so that the ComplexTypeModelBinder will recurse to bind elements.
             var testContext = ModelBindingTestHelper.GetTestContext(request =>
             {
                 request.QueryString = new QueryString(queryString);
                 SetJsonBodyContent(request, AddressBodyContent);
             });
-
-            var modelState = testContext.ModelState;
 
             // Act
             var modelBindingResult = await argumentBinder.BindModelAsync(parameter, testContext);
