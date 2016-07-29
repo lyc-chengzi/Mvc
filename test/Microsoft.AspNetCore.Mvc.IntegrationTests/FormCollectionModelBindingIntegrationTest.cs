@@ -25,7 +25,8 @@ namespace Microsoft.AspNetCore.Mvc.IntegrationTests
         {
             public int Zip { get; set; }
 
-            public IFormCollection FileCollection { get; set; }
+            [ModelBinder(Name = "Files")]
+            public IFormFileCollection FileCollection { get; set; }
         }
 
         [Fact]
@@ -45,7 +46,7 @@ namespace Microsoft.AspNetCore.Mvc.IntegrationTests
                 request =>
                 {
                     request.QueryString = QueryString.Create("Address.Zip", "12345");
-                    UpdateRequest(request, data, "Address.File");
+                    UpdateRequest(request, data, "Address.Files");
                 });
 
             var modelState = testContext.ModelState;
@@ -61,18 +62,76 @@ namespace Microsoft.AspNetCore.Mvc.IntegrationTests
             // Model
             var boundPerson = Assert.IsType<Person>(modelBindingResult.Model);
             Assert.NotNull(boundPerson.Address);
-            var formCollection = Assert.IsAssignableFrom<IFormCollection>(boundPerson.Address.FileCollection);
-            var file = Assert.Single(formCollection.Files);
-            Assert.Equal("form-data; name=Address.File; filename=text.txt", file.ContentDisposition);
+            var formFileCollection = Assert.IsAssignableFrom<IFormFileCollection>(boundPerson.Address.FileCollection);
+            var file = Assert.Single(formFileCollection);
+            Assert.Equal("form-data; name=Address.Files; filename=text.txt", file.ContentDisposition);
             var reader = new StreamReader(file.OpenReadStream());
             Assert.Equal(data, reader.ReadToEnd());
 
             // ModelState
             Assert.True(modelState.IsValid);
-            var entry = Assert.Single(modelState);
-            Assert.Equal("Address.Zip", entry.Key);
-            Assert.Empty(entry.Value.Errors);
-            Assert.Equal(ModelValidationState.Valid, entry.Value.ValidationState);
+            Assert.Equal(2, modelState.Count);
+
+            var entry = Assert.Single(modelState, e => e.Key == "Address.Zip").Value;
+            Assert.Equal("12345", entry.AttemptedValue);
+            Assert.Equal("12345", entry.RawValue);
+            Assert.Single(modelState, e => e.Key == "Address.Files");
+        }
+
+        private class Car1
+        {
+            public string Name { get; set; }
+
+            public FormFileCollection Specs { get; set; }
+        }
+
+        [Fact]
+        public async Task BindProperty_WithData_WithPrefix_GetsBound()
+        {
+            // Arrange
+            var argumentBinder = ModelBindingTestHelper.GetArgumentBinder();
+            var parameter = new ParameterDescriptor
+            {
+                Name = "p",
+                BindingInfo = new BindingInfo(),
+                ParameterType = typeof(Car1)
+            };
+
+            var data = "Some Data Is Better Than No Data.";
+            var testContext = ModelBindingTestHelper.GetTestContext(
+                request =>
+                {
+                    request.QueryString = QueryString.Create("p.Name", "Accord");
+                    UpdateRequest(request, data, "p.Specs");
+                });
+
+            var modelState = testContext.ModelState;
+
+            // Act
+            var modelBindingResult = await argumentBinder.BindModelAsync(parameter, testContext);
+
+            // Assert
+
+            // ModelBindingResult
+            Assert.True(modelBindingResult.IsModelSet);
+
+            // Model
+            var car = Assert.IsType<Car1>(modelBindingResult.Model);
+            Assert.NotNull(car.Specs);
+            var file = Assert.Single(car.Specs);
+            Assert.Equal("form-data; name=p.Specs; filename=text.txt", file.ContentDisposition);
+            var reader = new StreamReader(file.OpenReadStream());
+            Assert.Equal(data, reader.ReadToEnd());
+
+            // ModelState
+            Assert.True(modelState.IsValid);
+            Assert.Equal(2, modelState.Count);
+
+            var entry = Assert.Single(modelState, e => e.Key == "p.Name").Value;
+            Assert.Equal("Accord", entry.AttemptedValue);
+            Assert.Equal("Accord", entry.RawValue);
+
+            Assert.Single(modelState, e => e.Key == "p.Specs");
         }
 
         [Fact]

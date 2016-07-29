@@ -359,6 +359,8 @@ namespace Microsoft.AspNetCore.Mvc.IntegrationTests
             // Assert
             Assert.True(modelBindingResult.IsModelSet);
 
+            Assert.True(modelState.IsValid);
+
             var model = Assert.IsType<PersonWithReadOnlyAndInitializedProperty>(modelBindingResult.Model);
             Assert.Equal("James", model.Name);
             Assert.NotNull(model.Aliases);

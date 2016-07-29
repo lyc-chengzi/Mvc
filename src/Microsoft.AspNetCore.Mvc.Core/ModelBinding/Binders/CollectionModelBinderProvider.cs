@@ -44,7 +44,7 @@ namespace Microsoft.AspNetCore.Mvc.ModelBinding.Binders
             // that's what we would create. (The cases handled here are IEnumerable<>, IReadOnlyColection<> and
             // IReadOnlyList<>).
             var enumerableType = ClosedGenericMatcher.ExtractGenericInterface(modelType, typeof(IEnumerable<>));
-            if (enumerableType != null && !context.Metadata.IsReadOnly)
+            if (enumerableType != null)
             {
                 var listType = typeof(List<>).MakeGenericType(enumerableType.GenericTypeArguments);
                 if (modelType.GetTypeInfo().IsAssignableFrom(listType.GetTypeInfo()))
